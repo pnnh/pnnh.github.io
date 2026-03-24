@@ -1,0 +1,101 @@
+# Welcome to Jekyll!
+#
+# This config file is meant for settings that affect your whole blog, values
+# which you are expected to set up once and rarely edit after that. If you find
+# yourself editing this file very often, consider using Jekyll's data files
+# feature for the data you need to update frequently.
+#
+# For technical reasons, this file is *NOT* reloaded automatically when you use
+# 'bundle exec jekyll serve'. If you change this file, please restart the server process.
+
+lang: zh-CN
+timezone: Asia/Shanghai
+
+title: 希望的光波
+tagline: 个人笔记备忘录平台
+description: 希望的光波是个人笔记备忘录平台，记录一些个人工作学习中的笔记。
+
+url: ''
+baseurl: ''
+
+github:
+  username: pnnh
+
+social:
+  name: pnnh
+  email: xspanni@gmail.com
+  links:
+    - https://github.com/pnnh
+
+# Build settings
+theme: jekyll-theme-chirpy
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+  - jekyll-paginate
+  - jekyll-archives
+
+# Theme appearance
+theme_mode: auto   # [light | dark]
+avatar: ''         # path to avatar image, e.g. /assets/img/avatar.jpg
+toc: true
+
+# Comments (disabled by default)
+comments:
+  active: ''       # [disqus | utterances | giscus]
+
+# Pagination
+paginate: 10
+
+# Markdown & code highlighting
+kramdown:
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: highlight
+    span:
+      line_numbers: false
+    block:
+      line_numbers: true
+      start_line: 1
+
+# Chirpy tabs sidebar navigation
+collections:
+  tabs:
+    output: true
+    sort_by: order
+
+defaults:
+  - scope:
+      path: ''
+      type: posts
+    values:
+      layout: post
+      comments: true
+      toc: true
+      permalink: /posts/:title/
+
+# Category & tag archive pages (liquid-based, works locally and on GH Pages)
+category_archive:
+  type: liquid
+  path: /categories/
+tag_archive:
+  type: liquid
+  path: /tags/
+
+sass:
+  quiet_deps: true
+  silence_deprecations:
+    - import
+    - global-builtin
+    - color-functions
+
+exclude:
+  - '*.gem'
+  - '*.gemspec'
+  - Gemfile.lock
+  - README.md
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/

@@ -9,13 +9,13 @@
 # 'bundle exec jekyll serve'. If you change this file, please restart the server process.
 
 lang: zh-CN
-timezone: Asia/Shanghai
+timezone: Asia/Hong_Kong
 
 title: 希望的光波
 tagline: 个人笔记备忘录平台
 description: 希望的光波是个人笔记备忘录平台，记录一些个人工作学习中的笔记。
 
-url: ''
+url: 'https://blog.huable.xyz'
 baseurl: ''
 
 github:
@@ -37,7 +37,7 @@ plugins:
 
 # Theme appearance
 theme_mode: light   # [light | dark]
-avatar: ''         # path to avatar image, e.g. /assets/img/avatar.jpg
+avatar: /assets/img/avatar.jpg
 toc: true
 
 # Comments (disabled by default)

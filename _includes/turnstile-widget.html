@@ -14,18 +14,15 @@
             sitekey: _tsSitekey,
             appearance: 'always',
             callback: function (token, preClearanceObtained) {
-                if (_tsPreClearance && preClearanceObtained) {
-                    console.log('Pre-clearance cookie issued');
-                    /* Safari ITP 会隔离跨站上下文设置的 cookie，导致后续导航不附带 cf_clearance。
-                       通过触发一次顶层导航，让 Cloudflare edge 通过 HTTP 响应头重新颁发
-                       cf_clearance 作为一方响应 cookie，Safari 即可正常携带。
-                       sessionStorage 标志位防止循环 reload。 */
-                    if (!sessionStorage.getItem('_ts_preclear_done')) {
-                        sessionStorage.setItem('_ts_preclear_done', '1');
-                        window.location.reload();
-                    }
-                } else {
-                    console.log('User completed challenge');
+                /* Safari ITP 阻止跨站上下文写入 cf_clearance，需触发顶层导航让
+                   Cloudflare edge 通过 HTTP 响应头重新颁发 cf_clearance。
+                   Chrome/Firefox 无此问题，不需要 reload。
+                   通过 navigator.vendor 判断 Safari（排除 iOS 上的 Chrome/Firefox）。 */
+                const isSafari = /apple/i.test(navigator.vendor) &&
+                    !/CriOS|FxiOS/.test(navigator.userAgent);
+                if (_tsPreClearance && isSafari && !sessionStorage.getItem('_ts_preclear_done')) {
+                    sessionStorage.setItem('_ts_preclear_done', '1');
+                    window.location.reload();
                 }
             },
             'error-callback': function (error) {

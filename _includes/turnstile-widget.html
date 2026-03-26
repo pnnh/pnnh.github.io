@@ -5,78 +5,36 @@
     const _tsPreClearance = {{ site.turnstile.pre_clearance | default: true }};
     const _tsSitekey = '{{ site.turnstile.sitekey }}';
 
-    function _tsSafariReload() {
-        const isSafari = /apple/i.test(navigator.vendor) &&
-            !/CriOS|FxiOS/.test(navigator.userAgent);
-        if (!_tsPreClearance || !isSafari) return;
-        try {
-            if (sessionStorage.getItem('_ts_preclear_done')) return;
-            sessionStorage.setItem('_ts_preclear_done', '1');
-        } catch (e) {
-            /* Safari Private Browsing 禁止 sessionStorage 写入，
-               且 cf_clearance 在此模式下也无法持久化，reload 无意义，直接跳过。 */
-            return;
-        }
-        window.location.reload();
-    }
-
     function onTurnstileLoaded() {
         const container = document.createElement('div');
         container.id = 'turnstile-container';
-        /* 显式声明尺寸避免 Turnstile 读到 0：
-           不用 overflow:hidden，避免干扰 Turnstile iframe 内部 resize 观察。 */
-        /* 保留显式尺寸供 Safari getBoundingClientRect 使用，
-           opacity:0 使容器不可见；appearance:'interaction-only' 保证绝大多数用户
-           自动通过时不渲染任何 UI，仅在极少数需要手动交互时 Turnstile 会覆盖显示。 */
-        container.style.cssText = 'width:300px;height:65px;position:fixed;bottom:8px;right:8px;z-index:9999;opacity:0;pointer-events:none;';
         document.body.appendChild(container);
 
         const config = {
             sitekey: _tsSitekey,
-            /* interaction-only：自动通过时不渲染任何可见 UI，
-               仅需用户手动交互时才显示组件（此时需恢复可见性）。 */
-            appearance: 'interaction-only',
+            appearance: 'always',
             callback: function (token, preClearanceObtained) {
-                /* 验证成功后立即移除容器，防止 token 过期后 Turnstile 重新弹出组件 */
-                var c = document.getElementById('turnstile-container');
-                if (c) c.remove();
-                _tsSafariReload();
-            },
-            'before-interactive-callback': function () {
-                /* 需要用户交互时恢复容器可见性 */
-                var c = document.getElementById('turnstile-container');
-                if (c) c.style.cssText = 'width:300px;height:65px;position:fixed;bottom:8px;right:8px;z-index:9999;';
+                if (_tsPreClearance && preClearanceObtained) {
+                    console.log('Pre-clearance cookie issued');
+                } else {
+                    console.log('User completed challenge');
+                }
             },
             'error-callback': function (error) {
                 console.error('Turnstile error:', error);
             }
         };
 
-        /* Safari 对 DOM 变更后的布局异步批处理：元素 append 后立即调用
-           getBoundingClientRect() 返回 0，Turnstile 内部测量产生 NaN，
-           render 流程静默失败，callback 永远不触发。
-           双 rAF 确保跨越两个绘制帧，Safari 完成布局后再初始化 Turnstile。
-           Chrome 同步完成布局，双 rAF 对其无负面影响。 */
-        requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-                const widgetId = turnstile.render('#turnstile-container', config);
+        if (_tsPreClearance) {
+            config.execution = 'execute';
+        }
 
-                /* 用轮询 turnstile.getResponse() 作为 callback 未触发时的兜底 */
-                if (_tsPreClearance) {
-                    const poll = setInterval(function () {
-                        try {
-                            if (turnstile.getResponse(widgetId)) {
-                                clearInterval(poll);
-                                _tsSafariReload();
-                            }
-                        } catch (e) {
-                            clearInterval(poll);
-                        }
-                    }, 300);
-                    setTimeout(function () { clearInterval(poll); }, 15000);
-                }
-            });
-        });
+        const widgetId = turnstile.render('#turnstile-container', config);
+
+        /* execution=execute 模式需手动调用 execute() 才会触发 challenge */
+        if (_tsPreClearance && widgetId) {
+            turnstile.execute(widgetId);
+        }
     }
 </script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoaded" async

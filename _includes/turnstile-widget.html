@@ -23,42 +23,60 @@
     function onTurnstileLoaded() {
         const container = document.createElement('div');
         container.id = 'turnstile-container';
-        /* 显式声明尺寸：Turnstile 渲染时调用 getBoundingClientRect() 测量容器，
-           无尺寸时返回 0，Turnstile 内部除法产生 NaN 导致 render 流程失败，
-           callback 永远不触发。Safari 对此更敏感，Chrome 有内部兜底。 */
-        container.style.cssText = 'width:300px;height:65px;position:fixed;bottom:8px;right:8px;z-index:9999;overflow:hidden;';
+        /* 显式声明尺寸避免 Turnstile 读到 0：
+           不用 overflow:hidden，避免干扰 Turnstile iframe 内部 resize 观察。 */
+        /* 保留显式尺寸供 Safari getBoundingClientRect 使用，
+           opacity:0 使容器不可见；appearance:'interaction-only' 保证绝大多数用户
+           自动通过时不渲染任何 UI，仅在极少数需要手动交互时 Turnstile 会覆盖显示。 */
+        container.style.cssText = 'width:300px;height:65px;position:fixed;bottom:8px;right:8px;z-index:9999;opacity:0;pointer-events:none;';
         document.body.appendChild(container);
 
         const config = {
             sitekey: _tsSitekey,
-            appearance: 'always',
+            /* interaction-only：自动通过时不渲染任何可见 UI，
+               仅需用户手动交互时才显示组件（此时需恢复可见性）。 */
+            appearance: 'interaction-only',
             callback: function (token, preClearanceObtained) {
+                /* 验证成功后立即移除容器，防止 token 过期后 Turnstile 重新弹出组件 */
+                var c = document.getElementById('turnstile-container');
+                if (c) c.remove();
                 _tsSafariReload();
+            },
+            'before-interactive-callback': function () {
+                /* 需要用户交互时恢复容器可见性 */
+                var c = document.getElementById('turnstile-container');
+                if (c) c.style.cssText = 'width:300px;height:65px;position:fixed;bottom:8px;right:8px;z-index:9999;';
             },
             'error-callback': function (error) {
                 console.error('Turnstile error:', error);
             }
         };
 
-        /* 默认 execution:'render'，challenge 在 render 后自动执行，无需手动 execute()。
-           Safari 下 execution:'execute' + turnstile.execute() 的延迟路径中
-           iframe postMessage 回调可能被 ITP 阻断，导致 callback 永远不触发。 */
-        const widgetId = turnstile.render('#turnstile-container', config);
+        /* Safari 对 DOM 变更后的布局异步批处理：元素 append 后立即调用
+           getBoundingClientRect() 返回 0，Turnstile 内部测量产生 NaN，
+           render 流程静默失败，callback 永远不触发。
+           双 rAF 确保跨越两个绘制帧，Safari 完成布局后再初始化 Turnstile。
+           Chrome 同步完成布局，双 rAF 对其无负面影响。 */
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                const widgetId = turnstile.render('#turnstile-container', config);
 
-        /* 用轮询 turnstile.getResponse() 作为 callback 未触发时的兜底（主要应对 Safari） */
-        if (_tsPreClearance) {
-            const poll = setInterval(function () {
-                try {
-                    if (turnstile.getResponse(widgetId)) {
-                        clearInterval(poll);
-                        _tsSafariReload();
-                    }
-                } catch (e) {
-                    clearInterval(poll);
+                /* 用轮询 turnstile.getResponse() 作为 callback 未触发时的兜底 */
+                if (_tsPreClearance) {
+                    const poll = setInterval(function () {
+                        try {
+                            if (turnstile.getResponse(widgetId)) {
+                                clearInterval(poll);
+                                _tsSafariReload();
+                            }
+                        } catch (e) {
+                            clearInterval(poll);
+                        }
+                    }, 300);
+                    setTimeout(function () { clearInterval(poll); }, 15000);
                 }
-            }, 300);
-            setTimeout(function () { clearInterval(poll); }, 15000);
-        }
+            });
+        });
     }
 </script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoaded" async

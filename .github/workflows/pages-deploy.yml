@@ -54,8 +54,7 @@ jobs:
           cat > _config_production.yml << EOF
           turnstile:
             enabled: true
-            sitekey: "$TURNSTILE_SITEKEY"
-            pre_clearance: true
+            sitekey: "$TURNSTILE_SITEKEY" 
           EOF
         env:
           TURNSTILE_SITEKEY: ${{ secrets.TURNSTILE_SITEKEY }}

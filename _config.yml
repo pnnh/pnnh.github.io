@@ -121,5 +121,4 @@ exclude:
 # Cloudflare Turnstile（默认关闭，fork 用户无需改动）
 turnstile:
   enabled: false
-  sitekey: ""   # 这里留空或占位，不放真实值 
-  pre_clearance: true  # 标记是否使用 pre-clearance 模式
+  sitekey: ""   # 这里留空或占位，不放真实值

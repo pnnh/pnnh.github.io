@@ -32,7 +32,7 @@
 
         const widgetId = turnstile.render('#turnstile-container', config);
 
-        // execution=execute 模式需手动调用 execute() 才会触发 challenge
+        /* execution=execute 模式需手动调用 execute() 才会触发 challenge */
         if (_tsPreClearance && widgetId) {
             turnstile.execute(widgetId);
         }

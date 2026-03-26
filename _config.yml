@@ -122,3 +122,4 @@ exclude:
 turnstile:
   enabled: false
   sitekey: ""   # 这里留空或占位，不放真实值 
+  pre_clearance: true  # 标记是否使用 pre-clearance 模式

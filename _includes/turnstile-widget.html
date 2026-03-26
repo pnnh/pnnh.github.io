@@ -1,0 +1,45 @@
+{% if jekyll.environment == "production" and site.turnstile.enabled %}
+
+<!-- Turnstile: 通过 onload 回调确保脚本加载后立即执行，container 由 JS 动态注入 body -->
+<script>
+    const _tsPreClearance = {{ site.turnstile.pre_clearance | default: false }};
+    const _tsSitekey = '{{ site.turnstile.sitekey }}';
+
+    function onTurnstileLoaded() {
+        const container = document.createElement('div');
+        container.id = 'turnstile-container';
+        document.body.appendChild(container);
+
+        const config = {
+            sitekey: _tsSitekey,
+            appearance: 'always',
+            callback: function (token, preClearanceObtained) {
+                console.log('Turnstile success, token:', token);
+                if (_tsPreClearance && preClearanceObtained) {
+                    console.log('Pre-clearance cookie issued');
+                } else {
+                    console.log('User completed challenge');
+                }
+            },
+            'error-callback': function (error) {
+                console.error('Turnstile error:', error);
+            }
+        };
+
+        if (_tsPreClearance) {
+            config.execution = 'execute';
+        }
+
+        const widgetId = turnstile.render('#turnstile-container', config);
+
+        // execution=execute 模式需手动调用 execute() 才会触发 challenge
+        if (_tsPreClearance && widgetId) {
+            turnstile.execute(widgetId);
+        }
+    }
+</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoaded" async
+    defer>
+    </script>
+
+{% endif %}

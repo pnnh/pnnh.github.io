@@ -45,8 +45,17 @@ jobs:
           ruby-version: 3.4
           bundler-cache: true
 
+      - name: Create production config with key from secret
+        run: |
+          cat > _config_production.yml << EOF
+          turnstile:
+            enabled: true
+            sitekey: "${{ secrets.TURNSTILE_SITEKEY }}"
+            pre_clearance: true
+          EOF
+
       - name: Build site
-        run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
+        run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}" -c _config.yml,_config_production.yml
         env:
           JEKYLL_ENV: "production"
 

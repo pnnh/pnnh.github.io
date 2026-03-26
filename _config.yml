@@ -117,3 +117,8 @@ exclude:
   - vendor/cache/
   - vendor/gems/
   - vendor/ruby/
+
+# Cloudflare Turnstile（默认关闭，fork 用户无需改动）
+turnstile:
+  enabled: false
+  sitekey: ""   # 这里留空或占位，不放真实值 

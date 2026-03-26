@@ -29,3 +29,6 @@ package-lock.json
 # Misc
 _sass/vendors
 assets/js/dist
+
+# 生产配置
+_config_production.yml

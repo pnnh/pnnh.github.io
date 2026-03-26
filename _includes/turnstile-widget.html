@@ -7,7 +7,7 @@
     function onTurnstileLoaded() {
         const container = document.createElement('div');
         container.id = 'turnstile-container';
-        // 彻底隐藏容器
+        /* 彻底隐藏容器 */
         container.style.position = 'absolute';
         container.style.opacity = '0';
         container.style.height = '0';
@@ -38,9 +38,11 @@
         /* execution=execute 模式需手动调用 execute() 才会触发 challenge */
         if (widgetId) {
             turnstile.execute(widgetId);
+        } else {
+            console.error('Failed to render Turnstile widget');
         }
     }
-    // 更可靠的加载处理
+    /* 更可靠的加载处理 */
     if (window.turnstile) {
         onTurnstileLoaded();
     }

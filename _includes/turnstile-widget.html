@@ -14,9 +14,16 @@
             sitekey: _tsSitekey,
             appearance: 'always',
             callback: function (token, preClearanceObtained) {
-                console.log('Turnstile success, token:', token);
                 if (_tsPreClearance && preClearanceObtained) {
                     console.log('Pre-clearance cookie issued');
+                    /* Safari ITP 会隔离跨站上下文设置的 cookie，导致后续导航不附带 cf_clearance。
+                       通过触发一次顶层导航，让 Cloudflare edge 通过 HTTP 响应头重新颁发
+                       cf_clearance 作为一方响应 cookie，Safari 即可正常携带。
+                       sessionStorage 标志位防止循环 reload。 */
+                    if (!sessionStorage.getItem('_ts_preclear_done')) {
+                        sessionStorage.setItem('_ts_preclear_done', '1');
+                        window.location.reload();
+                    }
                 } else {
                     console.log('User completed challenge');
                 }

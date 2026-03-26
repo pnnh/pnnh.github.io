@@ -5,40 +5,59 @@
     const _tsPreClearance = {{ site.turnstile.pre_clearance | default: true }};
     const _tsSitekey = '{{ site.turnstile.sitekey }}';
 
+    function _tsSafariReload() {
+        const isSafari = /apple/i.test(navigator.vendor) &&
+            !/CriOS|FxiOS/.test(navigator.userAgent);
+        if (!_tsPreClearance || !isSafari) return;
+        try {
+            if (sessionStorage.getItem('_ts_preclear_done')) return;
+            sessionStorage.setItem('_ts_preclear_done', '1');
+        } catch (e) {
+            /* Safari Private Browsing 禁止 sessionStorage 写入，
+               且 cf_clearance 在此模式下也无法持久化，reload 无意义，直接跳过。 */
+            return;
+        }
+        window.location.reload();
+    }
+
     function onTurnstileLoaded() {
         const container = document.createElement('div');
         container.id = 'turnstile-container';
+        /* 显式声明尺寸：Turnstile 渲染时调用 getBoundingClientRect() 测量容器，
+           无尺寸时返回 0，Turnstile 内部除法产生 NaN 导致 render 流程失败，
+           callback 永远不触发。Safari 对此更敏感，Chrome 有内部兜底。 */
+        container.style.cssText = 'width:300px;height:65px;position:fixed;bottom:8px;right:8px;z-index:9999;overflow:hidden;';
         document.body.appendChild(container);
 
         const config = {
             sitekey: _tsSitekey,
             appearance: 'always',
             callback: function (token, preClearanceObtained) {
-                /* Safari ITP 阻止跨站上下文写入 cf_clearance，需触发顶层导航让
-                   Cloudflare edge 通过 HTTP 响应头重新颁发 cf_clearance。
-                   Chrome/Firefox 无此问题，不需要 reload。
-                   通过 navigator.vendor 判断 Safari（排除 iOS 上的 Chrome/Firefox）。 */
-                const isSafari = /apple/i.test(navigator.vendor) &&
-                    !/CriOS|FxiOS/.test(navigator.userAgent);
-                if (_tsPreClearance && isSafari && !sessionStorage.getItem('_ts_preclear_done')) {
-                    sessionStorage.setItem('_ts_preclear_done', '1');
-                    window.location.reload();
-                }
+                _tsSafariReload();
             },
             'error-callback': function (error) {
                 console.error('Turnstile error:', error);
             }
         };
 
-        if (_tsPreClearance) {
-            config.execution = 'execute';
-        }
-
+        /* 默认 execution:'render'，challenge 在 render 后自动执行，无需手动 execute()。
+           Safari 下 execution:'execute' + turnstile.execute() 的延迟路径中
+           iframe postMessage 回调可能被 ITP 阻断，导致 callback 永远不触发。 */
         const widgetId = turnstile.render('#turnstile-container', config);
 
-        /* execution=execute 模式需手动调用 execute() 才会触发 challenge */
-        if (_tsPreClearance && widgetId) {
-            turnstile.execute(widgetId);
+        /* 用轮询 turnstile.getResponse() 作为 callback 未触发时的兜底（主要应对 Safari） */
+        if (_tsPreClearance) {
+            const poll = setInterval(function () {
+                try {
+                    if (turnstile.getResponse(widgetId)) {
+                        clearInterval(poll);
+                        _tsSafariReload();
+                    }
+                } catch (e) {
+                    clearInterval(poll);
+                }
+            }, 300);
+            setTimeout(function () { clearInterval(poll); }, 15000);
         }
     }
 </script>

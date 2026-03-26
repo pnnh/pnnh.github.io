@@ -47,12 +47,18 @@ jobs:
 
       - name: Create production config with key from secret
         run: |
+          if [ -z "$TURNSTILE_SITEKEY" ]; then
+            echo "::error::Secret TURNSTILE_SITEKEY is not set or empty"
+            exit 1
+          fi
           cat > _config_production.yml << EOF
           turnstile:
             enabled: true
-            sitekey: "${{ secrets.TURNSTILE_SITEKEY }}"
+            sitekey: "$TURNSTILE_SITEKEY"
             pre_clearance: true
           EOF
+        env:
+          TURNSTILE_SITEKEY: ${{ secrets.TURNSTILE_SITEKEY }}
 
       - name: Build site
         run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}" -c _config.yml,_config_production.yml

@@ -2,7 +2,7 @@
 
 <!-- Turnstile: 通过 onload 回调确保脚本加载后立即执行，container 由 JS 动态注入 body -->
 <script>
-    const _tsPreClearance = {{ site.turnstile.pre_clearance | default: false }};
+    const _tsPreClearance = {{ site.turnstile.pre_clearance | default: true }};
     const _tsSitekey = '{{ site.turnstile.sitekey }}';
 
     function onTurnstileLoaded() {

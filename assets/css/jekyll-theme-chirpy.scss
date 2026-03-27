@@ -1,0 +1,21 @@
+---
+---
+
+@import 'main
+{%- if jekyll.environment == 'production' -%}
+  .bundle
+{%- endif -%}
+';
+
+/* append your custom style below */
+
+/*
+  Fix: Chirpy's refactor-content.html removes <pre> tags from code blocks
+  (to avoid jekyll-compress-html stripping newlines inside <pre>).
+  Without <pre>, the browser default white-space:pre is lost.
+  This restores proper code block rendering.
+*/
+.highlight > code {
+  white-space: pre;
+  display: block;
+}

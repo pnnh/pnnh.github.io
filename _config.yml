@@ -117,3 +117,8 @@ exclude:
   - vendor/cache/
   - vendor/gems/
   - vendor/ruby/
+
+# 禁用HTML压缩，会导致JS被注释以及代码高亮失效，换行丢失等问题
+compress_html:
+  ignore:
+    envs: all
